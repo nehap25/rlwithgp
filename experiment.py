@@ -5,6 +5,7 @@ import pybullet_data
 import numpy as np
 from numpy import float32
 from numpy import array
+from numpy.linalg import inv
 from simple_world.constants import DIM, ORI, FRICTION, GRIPPER_ORI, GRIPPER_X, GRIPPER_Y, GRIPPER_Z, MASS, MAX_FRICTION, MAX_MASS, MIN_FRICTION, MIN_MASS, STEPS, WLH
 from simple_world.utils import Conf, Pose, Robot, close_enough, create_object, create_stack, eul_to_quat, get_full_aabb, get_pose, get_yaw, rejection_sample_aabb, rejection_sample_region, sample_aabb, set_conf, set_pose, step_simulation
 from simple_world.primitives import get_push_conf, move, push
@@ -63,12 +64,20 @@ class GP:
 		self.mean = {}
 		for i in range(len(states)):
 			self.mean[states[i]] = mean[i]
-		self.covar = kernel + noise_var*np.identity(len(states))
+		self.kernel = kernel
+		self.covar = kernel(states, states, gamma=1/(2*(rbf_theta**2)))
 		self.states = states
 
 	def update(self, state, reward_val):
-		self.mean[state] = inv(self.covar)
-
+		K = self.kernel(state, state, gamma=1/(2*(rbf_theta**2))) + noise_var
+		K_s = self.kernel(state, self.states, gamma=1/(2*(rbf_theta**2))) 
+		K_ss = self.kernel(self.states, self.states, gamma=(1/(2*(rbf_theta**2)))) + noise_var*np.eye(len(self.states))
+		K_inv = inv(K)
+		
+		mu_s = K_s.T.dot(K_inv).dot([reward_val])
+		for i in range(len(states)):
+			self.mean[states[i]] = mu_s[i]
+		self.covar = K_ss - K_s.T.dot(K_inv).dot(K_s)
 
 	def mean(self, state):
 		return self.mean[state]
@@ -113,7 +122,7 @@ Q_dict = {}
 GP_actions = {}
 for action in actions:
 	means = [Rmax/(1 - discount) for i in range(len(states))]
-	GP_actions[action] = GP(means, rbf_kernel(states, states, gamma=1/(2*theta**2)), states)
+	GP_actions[action] = GP(means, rbf_kernel, states)
 
 for t in timesteps:
 	a_t = argmax_action(Q_dict, s_t)
@@ -136,5 +145,5 @@ for t in timesteps:
 		Q_dict[(s_t, a_t)] = new_mean
 		for action in actions:
 			new_mu = [Q(s, action, Q_dict) for s in states]
-			GP_actions[action] = GP(new_mu, rbf_kernel(states, states, gamma=1/(2*theta**2)), states)
+			GP_actions[action] = GP(new_mu, rbf_kernel, states)
 
