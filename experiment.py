@@ -45,18 +45,20 @@ rbf_theta = 0.05
 epsilon = 
 delta = 
 
-def covering_number(states, r, dist_per_step):
-	area=math.pi*r*r
-	return math.ceil(1/area)
-
-Ns =  covering_number(states, epsilon*(1 - discount)/(3*lipschitz), dist_per_step)# N_S (ε(1−γ)/(3lipschitz))
-
 #Reward function parameters 
 discount = 0.99
 ####CHANGE BELOW IF YOU CHANGE REWARD FUNCTION####
 Rmax = 2
 Vmax = Rmax*timesteps
 ##################################################
+
+def covering_number(states, r, dist_per_step):
+	area=math.pi*r*r
+	return math.ceil(1/area)
+
+Ns =  covering_number(states, epsilon*(1 - discount)/(3*lipschitz), dist_per_step)# N_S (ε(1−γ)/(3lipschitz))
+
+
 
 #Sensitivity analysis of k, (sigma_tol)^2, e_1
 multiplicative_factor = epsilon*(1-discount)/(3*lipschitz)
