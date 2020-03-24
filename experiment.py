@@ -73,11 +73,11 @@ class GP:
 		K_s = self.kernel(state, self.states, gamma=1/(2*(rbf_theta**2))) 
 		K_ss = self.kernel(self.states, self.states, gamma=(1/(2*(rbf_theta**2)))) + noise_var*np.eye(len(self.states))
 		K_inv = inv(K)
-		#should K_inv = inv(K_ss)--> i think that's what both equations are taking the inverse of?
+		#should K_inv = inv(K_ss)?--> i think that's what both equations are taking the inverse of?
 		mu_s = K_s.T.dot(K_inv).dot([reward_val])
 		for i in range(len(states)):
 			self.mean[states[i]] = mu_s[i]
-		#should K_ss be K--> the equation says k(x',x') - <something>
+		#should K_ss be K?--> the equation says k(x',x') - <something>
 		self.covar = K_ss - K_s.T.dot(K_inv).dot(K_s)
 
 	def mean(self, state):
