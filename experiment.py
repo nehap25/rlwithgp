@@ -89,6 +89,7 @@ class GP:
 
 
 #Supporting functions 
+
 def covering_number(states, r, dist_per_step):
 	return len(states)
 
