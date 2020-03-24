@@ -73,10 +73,11 @@ class GP:
 		K_s = self.kernel(state, self.states, gamma=1/(2*(rbf_theta**2))) 
 		K_ss = self.kernel(self.states, self.states, gamma=(1/(2*(rbf_theta**2)))) + noise_var*np.eye(len(self.states))
 		K_inv = inv(K)
-		
+		#should K_inv = inv(K_ss)--> i think that's what both equations are taking the inverse of?
 		mu_s = K_s.T.dot(K_inv).dot([reward_val])
 		for i in range(len(states)):
 			self.mean[states[i]] = mu_s[i]
+		#should K_ss be K--> the equation says k(x',x') - <something>
 		self.covar = K_ss - K_s.T.dot(K_inv).dot(K_s)
 
 	def mean(self, state):
@@ -117,6 +118,10 @@ def argmax_action(Q_dict, s_t):
 			currentMax = Q(s_t, action, Q_dict)
 			a = action
 	return a
+def get_reward(s_t):
+	if ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5 > 0.15:
+		return 0
+	return 1
 
 Q_dict = {}
 GP_actions = {}
@@ -127,7 +132,7 @@ for action in actions:
 for t in timesteps:
 	a_t = argmax_action(Q_dict, s_t)
 	s_t = np.add(s_t, a_t)
-	r_t = #?
+	r_t = get_reward(s_t) #RESOLVE:unclear if reward is sparse or not!!
 	q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
 	sigma_one_squared = GP_actions[a_t].variance(s_t)
 	if sigma_one_squared > var_threshold:
