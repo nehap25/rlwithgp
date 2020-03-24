@@ -37,16 +37,22 @@ rbf_theta = 0.05
 epsilon = 
 delta = 
 Ns =  covering_number(states, epsilon*(1 - discount)/(3*lipschitz), dist_per_step)# N_S (ε(1−γ)/(3lipschitz))
+#TODO:CLARIFY THE R VALUE TO COVERING NUMBER FUNCTION--> IS IT MULTIPLED BY 0.5var_total?##
 
 #Reward function parameters 
-discount = 
-Rmax =
-Vmax = 
+discount = 0.99
+####CHANGE BELOW IF YOU CHANGE REWARD FUNCTION####
+Rmax = 2
+Vmax = Rmax*timesteps
+##################################################
 
 #Sensitivity analysis of k, (sigma_tol)^2, e_1
-k = len(A)*Ns*((3*Rmax/((1 - discount)**2)*epsilon) + 1)
+multiplicative_factor = epsilon*(1-discount)/(3*lipschitz)
+k = len(A)*Ns*multiplicative_factor*((3*Rmax/((1 - discount)**2)*epsilon) + 1)
 var_threshold_num = 2*noise_var*(epsilon**2)*((1 - discount)**4)
-var_threshold_denom = 9*(Rmax**2)*log(len(A)*Ns*(1 + k)*6/delta)
+var_threshold_denom = 9*(Rmax**2)
+log_val=log(multiplicative_factor*len(A)*Ns*(1 + k)*6/delta)
+var_threshold_denom*=log_val
 var_threshold = var_threshold_num/var_threshold_denom
 epsilon_one = epsilon*(1 - discount)/3
 
@@ -91,6 +97,7 @@ class GP:
 #Supporting functions 
 
 def covering_number(states, r, dist_per_step):
+	r=r*0.5*
 	return len(states)
 
 #Calculates distances between two states (based on L1 metric for experiment 1)
@@ -119,10 +126,13 @@ def argmax_action(Q_dict, s_t):
 			currentMax = Q(s_t, action, Q_dict)
 			a = action
 	return a
-def get_reward(s_t):
+def get_reward_v1(s_t):
 	if ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5 > 0.15:
 		return 0
-	return 1
+	return 1, 
+def get_reward_v2(s_t):
+	return 2 - (1-s_t[0])**2 + (1-s_t[1])**2)**0.5 
+
 
 Q_dict = {}
 GP_actions = {}
@@ -133,7 +143,7 @@ for action in actions:
 for t in timesteps:
 	a_t = argmax_action(Q_dict, s_t)
 	s_t = np.add(s_t, a_t)
-	r_t = get_reward(s_t) #RESOLVE:unclear if reward is sparse or not!!
+	r_t = get_reward_v2(s_t) 
 	q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
 	sigma_one_squared = GP_actions[a_t].variance(s_t)
 	if sigma_one_squared > var_threshold:
