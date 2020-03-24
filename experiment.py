@@ -1,7 +1,5 @@
 from math import log
 import os
-import pybullet as p #DEPENDENCY
-import pybullet_data
 import numpy as np
 from numpy import float32
 from numpy import array
