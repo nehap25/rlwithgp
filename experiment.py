@@ -52,7 +52,6 @@ def covering_number(states, r, dist_per_step):
 	return math.ceil(1/area)
 
 Ns =  covering_number(states, epsilon*(1 - discount)/(3*lipschitz), dist_per_step)# N_S (ε(1−γ)/(3lipschitz))
-#TODO:CLARIFY THE R VALUE TO COVERING NUMBER FUNCTION--> IS IT MULTIPLED BY 0.5var_total?##
 
 #Reward function parameters 
 discount = 0.99
