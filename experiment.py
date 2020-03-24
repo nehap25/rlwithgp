@@ -145,7 +145,7 @@ for action in actions:
 	means = [Rmax/(1 - discount) for i in range(len(states))]
 	GP_actions[action] = GP(means, rbf_kernel, states)
 
-for t in timesteps:
+for t in range(timesteps):
 	a_t = argmax_action(Q_dict, s_t)
 	s_t = np.add(s_t, a_t)
 	r_t = get_reward_v2(s_t) 
