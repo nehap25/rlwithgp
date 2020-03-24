@@ -65,7 +65,7 @@ multiplicative_factor = epsilon*(1-discount)/(3*lipschitz)
 k = len(actions)*Ns*multiplicative_factor*((3*Rmax/((1 - discount)**2)*epsilon) + 1)
 var_threshold_num = 2*noise_var*(epsilon**2)*((1 - discount)**4)
 var_threshold_denom = 9*(Rmax**2)
-log_val=log(multiplicative_factor*len(A)*Ns*(1 + k)*6/delta)
+log_val=log(multiplicative_factor*len(actions)*Ns*(1 + k)*6/delta)
 var_threshold_denom*=log_val
 var_threshold = var_threshold_num/var_threshold_denom
 epsilon_one = epsilon*(1 - discount)/3
@@ -78,7 +78,7 @@ class GP:
 	def __init__(self, means, kernel, states):
 		self.mean = {}
 		for i in range(len(states)):
-			self.mean[states[i]] = mean[i]
+			self.mean[states[i]] = means[i]
 		self.kernel = kernel
 		self.covar = kernel(states, states, gamma=1/(2*(rbf_theta**2)))
 		self.states = states
