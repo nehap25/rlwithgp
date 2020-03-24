@@ -6,15 +6,25 @@ import numpy as np
 from numpy import float32
 from numpy import array
 from numpy.linalg import inv
-from simple_world.constants import DIM, ORI, FRICTION, GRIPPER_ORI, GRIPPER_X, GRIPPER_Y, GRIPPER_Z, MASS, MAX_FRICTION, MAX_MASS, MIN_FRICTION, MIN_MASS, STEPS, WLH
-from simple_world.utils import Conf, Pose, Robot, close_enough, create_object, create_stack, eul_to_quat, get_full_aabb, get_pose, get_yaw, rejection_sample_aabb, rejection_sample_region, sample_aabb, set_conf, set_pose, step_simulation
-from simple_world.primitives import get_push_conf, move, push
-from gen_data import *
+
 import time
 import math
 from sklearn.metrics.pairwise import rbf_kernel
-full_pose, robot, objects,use_gui,goal_pose,mass_bool=setup(True)
-#change boolean to False to get rid of visualization
+
+####CODE FOR ROBOTICS ENVIRONMENT--UNNECESSARY NOW#####
+#######################################################
+#import pybullet as p 
+#import pybullet_data
+#from simple_world.constants import DIM, ORI, FRICTION, GRIPPER_ORI, GRIPPER_X, GRIPPER_Y, GRIPPER_Z, MASS, MAX_FRICTION, MAX_MASS, MIN_FRICTION, MIN_MASS, STEPS, WLH
+#from simple_world.utils import Conf, Pose, Robot, close_enough, create_object, create_stack, eul_to_quat, get_full_aabb, get_pose, get_yaw, rejection_sample_aabb, rejection_sample_region, sample_aabb, set_conf, set_pose, step_simulation
+#from simple_world.primitives import get_push_conf, move, push
+#from gen_data import *
+#full_pose, robot, objects,use_gui,goal_pose,mass_bool=setup(True)
+#for action in actions:
+#  robot,objects,use_gui,reward=step(action[0],action[1],robot,objects,goal_pose,use_gui)
+########################################################
+
+
 """
 Potential Questions for authors: 
 - how to define epsilon, delta, Ns, discount, Rmax in Experiment 1
@@ -36,6 +46,11 @@ rbf_theta = 0.05
 #Accuracy parameters 
 epsilon = 
 delta = 
+
+def covering_number(states, r, dist_per_step):
+	area=math.pi*r*r
+	return math.ceil(1/area)
+
 Ns =  covering_number(states, epsilon*(1 - discount)/(3*lipschitz), dist_per_step)# N_S (ε(1−γ)/(3lipschitz))
 #TODO:CLARIFY THE R VALUE TO COVERING NUMBER FUNCTION--> IS IT MULTIPLED BY 0.5var_total?##
 
@@ -57,12 +72,7 @@ var_threshold = var_threshold_num/var_threshold_denom
 epsilon_one = epsilon*(1 - discount)/3
 
 
-##CODE FOR ONE EPISODE##
-full_pose, robot, objects,use_gui,goal_pose,mass_bool=setup(True)
-for action in actions:
-  robot,objects,use_gui,reward=step(action[0],action[1],robot,objects,goal_pose,use_gui)
-  print(reward)
-########################
+
 
 class GP:
 
@@ -94,9 +104,7 @@ class GP:
 
 #Supporting functions 
 
-def covering_number(states, r, dist_per_step):
-	r=r*0.5*
-	return len(states)
+
 
 #Calculates distances between two states (based on L1 metric for experiment 1)
 def d(s, si):
