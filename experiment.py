@@ -77,7 +77,7 @@ class GP:
 	def update(self, state, reward_val):
 		K = self.kernel(state, state, gamma=1/(2*(rbf_theta**2))) + noise_var*np.eye(len(self.states))
 		K_s = self.kernel(state, self.states, gamma=1/(2*(rbf_theta**2))) 
-		K_ss = self.kernel(self.states, self.states, gamma=(1/(2*(rbf_theta**2)))) 1e-8*np.eye(1)
+		K_ss = self.kernel(self.states, self.states, gamma=(1/(2*(rbf_theta**2)))) + 1e-8*np.eye(1)
 		K_inv = inv(K)
 		mu_s = K_s.T.dot(K_inv).dot([reward_val])
 		for i in range(len(states)):
