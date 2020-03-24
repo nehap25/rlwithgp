@@ -134,7 +134,7 @@ def get_reward_v1(s_t):
 		return 0
 	return 1, 
 def get_reward_v2(s_t):
-	return 2 - (1-s_t[0])**2 + (1-s_t[1])**2)**0.5 
+	return 2 - ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5 
 
 
 Q_dict = {}
