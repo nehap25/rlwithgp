@@ -41,9 +41,9 @@ timesteps = 200
 states = [(i/10, j/10) for i in range(0, 10) for j in range(0, 10)]
 rbf_theta = 0.05
 
-#Accuracy parameters 
-epsilon = 
-delta = 
+#Accuracy parameters--UNKNOWN 
+epsilon = 0.3
+delta = 0.3
 
 #Reward function parameters 
 discount = 0.99
@@ -62,7 +62,7 @@ Ns =  covering_number(states, epsilon*(1 - discount)/(3*lipschitz), dist_per_ste
 
 #Sensitivity analysis of k, (sigma_tol)^2, e_1
 multiplicative_factor = epsilon*(1-discount)/(3*lipschitz)
-k = len(A)*Ns*multiplicative_factor*((3*Rmax/((1 - discount)**2)*epsilon) + 1)
+k = len(actions)*Ns*multiplicative_factor*((3*Rmax/((1 - discount)**2)*epsilon) + 1)
 var_threshold_num = 2*noise_var*(epsilon**2)*((1 - discount)**4)
 var_threshold_denom = 9*(Rmax**2)
 log_val=log(multiplicative_factor*len(A)*Ns*(1 + k)*6/delta)
