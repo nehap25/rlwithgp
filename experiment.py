@@ -1,3 +1,5 @@
+
+  
 from math import log
 import os
 import numpy as np
@@ -53,8 +55,8 @@ Vmax = Rmax*timesteps
 ##################################################
 
 def covering_number(states, r, dist_per_step):
-	area=math.pi*r*r
-	return math.ceil(1/area)
+    area=math.pi*r*r
+    return math.ceil(1/area)
 
 Ns =  covering_number(states, epsilon*(1 - discount)/(3*lipschitz), dist_per_step)# N_S (ε(1−γ)/(3lipschitz))
 
@@ -75,30 +77,36 @@ epsilon_one = epsilon*(1 - discount)/3
 
 class GP:
 
-	def __init__(self, means, kernel, states):
-		self.mean = {}
-		for i in range(len(states)):
-			self.mean[states[i]] = means[i]
-		self.kernel = kernel
-		self.covar = kernel(states, states, gamma=1/(2*(rbf_theta**2)))
-		self.states = states
+    def __init__(self, means, kernel, states):
+        self.mean = {}
+        for i in range(len(states)):
+            self.mean[states[i]] = means[i]
+        self.kernel = kernel
+        self.covar = kernel(states, states, gamma=1/(2*(rbf_theta**2)))
+        self.states = states
+        self.x_values=[]
+        self.y_values=[]
 
-	def update(self, state, reward_val):
-		K_ss = self.kernel(state, state, gamma=1/(2*(rbf_theta**2))) 
-		K_s = self.kernel(self.states,state, gamma=1/(2*(rbf_theta**2))) 
-		K = self.kernel(self.states, self.states, gamma=(1/(2*(rbf_theta**2)))) + noise_var*np.eye(len(self.states))
-		K_inv = inv(K)
-		mu_s = K_s.T.dot(K_inv).dot([reward_val])
-		for i in range(len(states)):
-			self.mean[states[i]] = mu_s[i]
-		self.covar = K_ss - K_s.T.dot(K_inv).dot(K_s)
+    def update(self, state, reward_val):
+        state=np.reshape(state,(1,-1))
+        K_ss = self.kernel(state, state, gamma=1/(2*(rbf_theta**2))) 
+        K_s = self.kernel(self.x_values,state, gamma=1/(2*(rbf_theta**2))) 
+        K = self.kernel(self.x_values, self.x_values, gamma=(1/(2*(rbf_theta**2)))) + noise_var*np.eye(len(self.x_values))
+        K_inv = inv(K)
+        print(K_s.T.shape,K_inv.shape)
+        mu_s = K_s.T.dot(K_inv).dot(self.y_values)
+        for i in range(len(states)):
+            self.mean[states[i]] = mu_s[i]
+        self.covar = K_ss - K_s.T.dot(K_inv).dot(K_s)
 
-	def mean(self, state):
-		return self.mean[state]
+    def mean(self, state):
+        return self.mean[state]
 
-	def variance(self, state):
-		state_ind = states.index(state)
-		return self.covar[state_ind][state_ind]
+    def variance(self, state):
+        for state_ind in range(len(states)):
+            if list(states[state_ind])==list(state):
+                break
+        return self.covar[state_ind][state_ind]
 
 
 #Supporting functions 
@@ -107,64 +115,66 @@ class GP:
 
 #Calculates distances between two states (based on L1 metric for experiment 1)
 def d(s, si):
-	distance = 0
-	for i in range(len(s)):
-		distance += abs(s[i] - si[i])
-	return distance
+    distance = 0
+    for i in range(len(s)):
+        distance += abs(s[i] - si[i])
+    return distance
 
 #Equation 7
 def Q(s, a, Q_dict):
-	currentMin = float('inf')
-	for (si, ai) in Q_dict:
-		if ai == a:
-			mu = Q_dict[(si, ai)]
-			total = mu + lipschitz*d(s, si)
-			currentMin = min(currentMin, total)
-	return min(currentMin, Vmax)
+    currentMin = float('inf')
+    for (si, ai) in Q_dict:
+        if ai == a:
+            mu = Q_dict[(si, ai)]
+            total = mu + lipschitz*d(s, si)
+            currentMin = min(currentMin, total)
+    return min(currentMin, Vmax)
 
 #Line 6 of algorithm 
 def argmax_action(Q_dict, s_t):
-	a= None
-	currentMax = float('-inf')
-	for action in actions:
-		if Q(s_t, action, Q_dict) > currentMax:
-			currentMax = Q(s_t, action, Q_dict)
-			a = action
-	return a
+    a= None
+    currentMax = float('-inf')
+    for action in actions:
+        if Q(s_t, action, Q_dict) > currentMax:
+            currentMax = Q(s_t, action, Q_dict)
+            a = action
+    return a
 def get_reward_v1(s_t):
-	if ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5 > 0.15:
-		return 0
-	return 1, 
+    if ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5 > 0.15:
+        return 0
+    return 1, 
 def get_reward_v2(s_t):
-	return 2 - ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5 
+    return 2 - ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5 
 
 
 Q_dict = {}
 GP_actions = {}
 for action in actions:
-	means = [Rmax/(1 - discount) for i in range(len(states))]
-	GP_actions[action] = GP(means, rbf_kernel, states)
+    means = [Rmax/(1 - discount) for i in range(len(states))]
+    GP_actions[action] = GP(means, rbf_kernel, states)
 
 for t in range(timesteps):
-	a_t = argmax_action(Q_dict, s_t)
-	s_t = np.add(s_t, a_t)
-	r_t = get_reward_v2(s_t) 
-	q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
-	sigma_one_squared = GP_actions[a_t].variance(s_t)
-	if sigma_one_squared > var_threshold:
-		GP_actions[a_t].update(s_t, q_t) 
-	sigma_two_squared = GP_actions[a_t].variance(s_t)
-	mean = GP_actions[a_t].mean(s_t)
-	if sigma_one_squared > var_threshold and var_threshold >= sigma_two_squared and Q(s_t, a_t, Q_dict) - mean > 2*epsilon_one:
-		new_mean = mean + epsilon_one
-		selected_keys = []
-		for (sj, aj) in Q_dict:
-			if new_mean + lipschitz*d(sj, s_t) <= Q_dict[(sj, aj)]:
-				selected_keys.append((sj, aj))
-		for key in selected_keys:
-			del Q_dict[key]
-		Q_dict[(s_t, a_t)] = new_mean
-		for action in actions:
-			new_mu = [Q(s, action, Q_dict) for s in states]
-			GP_actions[action] = GP(new_mu, rbf_kernel, states)
+    a_t = argmax_action(Q_dict, s_t)
+    s_t = np.add(s_t, a_t)
+    r_t = get_reward_v2(s_t) 
+    q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
+    sigma_one_squared = GP_actions[a_t].variance(s_t)
+    if sigma_one_squared > var_threshold:
+        GP_actions[a_t].update(s_t, q_t) 
+    sigma_two_squared = GP_actions[a_t].variance(s_t)
+    mean = GP_actions[a_t].mean(s_t)
+    if sigma_one_squared > var_threshold and var_threshold >= sigma_two_squared and Q(s_t, a_t, Q_dict) - mean > 2*epsilon_one:
+        new_mean = mean + epsilon_one
+        selected_keys = []
+        for (sj, aj) in Q_dict:
+            if new_mean + lipschitz*d(sj, s_t) <= Q_dict[(sj, aj)]:
+                selected_keys.append((sj, aj))
+        for key in selected_keys:
+            del Q_dict[key]
+        Q_dict[(s_t, a_t)] = new_mean
+        for action in actions:
+            new_mu = [Q(s, action, Q_dict) for s in states]
+            GP_actions[action] = GP(new_mu, rbf_kernel, states)
+    GP_actions.x_values.append(s_t)
+    GP_actions.y_values.append(r_t)
 
