@@ -39,7 +39,7 @@ delta =
 Ns =  covering_number(states, epsilon*(1 - discount)/(3*lipschitz), dist_per_step)# N_S (ε(1−γ)/(3lipschitz))
 
 #Reward function parameters 
-discount = 
+discount = 0.99
 Rmax =
 Vmax = 
 
