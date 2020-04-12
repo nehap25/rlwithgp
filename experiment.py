@@ -28,7 +28,7 @@ lipschitz = 9
 s_t = (0, 0)
 actions = [(0.1, 0), (-0.1, 0), (0, 0.1), (0, -0.1)]
 noise_var = 0.1
-timesteps = 10000
+timesteps = 200
 states = [(i/10, j/10) for i in range(0, 10) for j in range(0, 10)]
 rbf_theta = 0.05
 
@@ -148,34 +148,35 @@ def get_reward_v1(s_t):
 def get_reward_v2(s_t):
     return 2 - ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5
 
-
+episodes=300
 Q_dict = {}
 GP_actions = {}
 for action in actions:
     GP_actions[action] = GP(Rmax/(1 - discount), rbf_kernel, action)
-
-for t in range(timesteps):
-    noise = np.random.normal(0, 0.01)
-    final_a, actual_a = argmax_action(Q_dict, s_t, noise)
-    s_t = tuple(np.add(s_t, final_a).tolist())
-    s_t = tuple([round(i, 2) for i in s_t])
-    r_t = get_reward_v2(s_t)
-    q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
-    sigma_one_squared = GP_actions[actual_a].variance(s_t)
-    if sigma_one_squared > var_threshold:
-        GP_actions[actual_a].update(s_t, q_t)
-    sigma_two_squared = GP_actions[actual_a].variance(s_t)
-    a_t_mean = GP_actions[actual_a].mean_state(s_t)
-    print(t, s_t)
-    if sigma_one_squared > var_threshold and var_threshold >= sigma_two_squared and Q(s_t, actual_a, Q_dict) - a_t_mean > 2*epsilon_one:
-        print("HERE")
-        new_mean = a_t_mean + epsilon_one
-        selected_keys = []
-        for (sj, aj) in Q_dict:
-            if new_mean + lipschitz*d(sj, s_t) <= Q_dict[(sj, aj)]:
-                selected_keys.append((sj, aj))
-        for key in selected_keys:
-            del Q_dict[key]
-        Q_dict[(s_t, actual_a)] = new_mean
-        for action in actions:
-            GP_actions[action] = GP("Q_MEAN", rbf_kernel, action, Q_dict)
+for i in range(episodes):
+    s_t=(0,0)
+    for t in range(timesteps):
+        noise = np.random.normal(0, 0.01)
+        final_a, actual_a = argmax_action(Q_dict, s_t, noise)
+        s_t = tuple(np.add(s_t, final_a).tolist())
+        s_t = tuple([round(i, 2) for i in s_t])
+        r_t = get_reward_v2(s_t)
+        q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
+        sigma_one_squared = GP_actions[actual_a].variance(s_t)
+        if sigma_one_squared > var_threshold:
+            GP_actions[actual_a].update(s_t, q_t)
+        sigma_two_squared = GP_actions[actual_a].variance(s_t)
+        a_t_mean = GP_actions[actual_a].mean_state(s_t)
+        print(t, s_t)
+        if sigma_one_squared > var_threshold and var_threshold >= sigma_two_squared and Q(s_t, actual_a, Q_dict) - a_t_mean > 2*epsilon_one:
+            print("HERE")
+            new_mean = a_t_mean + epsilon_one
+            selected_keys = []
+            for (sj, aj) in Q_dict:
+                if new_mean + lipschitz*d(sj, s_t) <= Q_dict[(sj, aj)]:
+                    selected_keys.append((sj, aj))
+            for key in selected_keys:
+                del Q_dict[key]
+            Q_dict[(s_t, actual_a)] = new_mean
+            for action in actions:
+                GP_actions[action] = GP("Q_MEAN", rbf_kernel, action, Q_dict)
