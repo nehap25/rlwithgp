@@ -28,7 +28,7 @@ lipschitz = 9
 s_t = (0, 0)
 actions = [(0.1, 0), (-0.1, 0), (0, 0.1), (0, -0.1)]
 noise_var = 0.1
-timesteps = 10000
+timesteps = 200
 states = [(i/10, j/10) for i in range(0, 10) for j in range(0, 10)]
 rbf_theta = 0.05
 
@@ -37,12 +37,11 @@ epsilon = 1
 delta = 0.96
 
 # Reward function parameters
-discount = 0.02
+discount = 0.01
 ####CHANGE BELOW IF YOU CHANGE REWARD FUNCTION####
 Rmax = 2
 Vmax = Rmax*timesteps
 ##################################################
-
 
 def covering_number(r):
     area = math.pi*r*r
@@ -58,6 +57,31 @@ log_val = log(len(actions)*Ns*(1 + k)*6/delta)
 var_threshold_denom *= log_val
 var_threshold = var_threshold_num/var_threshold_denom
 epsilon_one = epsilon*(1 - discount)/3
+
+logval = log(6*len(actions)*Ns*(1 + k)/delta)
+m = (36*len(actions)*Ns*(Rmax**2)*logval)/(((1 - discount)**4)*(epsilon**2))
+eta = m*len(actions)*Ns*(3*Rmax/(((1 - discount)**2)*epsilon) + 1)
+steps = Rmax*eta*log(1/delta)*log(1/(epsilon*(1 - discount)))/(epsilon*((1 - discount)**2))
+
+# for d in range(0, 100):
+#     discount = d/100.0
+#     for e in range(1, int(1/(1 - discount)) + 1):
+#         for de in range(1, 100):
+#             delta = de/100.0
+#             Ns = covering_number(e*(1 - discount)/(3*lipschitz))
+#             k = len(actions)*Ns*(3*Rmax/(((1 - discount)**2)*e) + 1)
+#             log_val = log(len(actions)*Ns*(1 + k)*6/delta)
+#             m = (36*len(actions)*Ns*(Rmax**2)*log_val)/(((1 - discount)**4)*(e**2))
+#             eta = m*len(actions)*Ns*(3*Rmax/(((1 - discount)**2)*e) + 1)
+#             steps = Rmax*eta*log(1.0/delta)*log(1/(e*(1 - discount)))/(e*((1 - discount)**2))            
+#             var_threshold_num = 2*noise_var*(e**2)*((1 - discount)**4)
+#             var_threshold_denom = 9*(Rmax**2)
+#             var_threshold_denom *= log_val
+#             var_threshold = var_threshold_num/var_threshold_denom
+#             print(discount, e, delta, steps, var_threshold)            
+            # if steps < 500:
+            #     print("GOT HERE")
+            #     print(discount, e, delta, steps, var_threshold)
 
 class GP:
 
@@ -75,7 +99,7 @@ class GP:
 
     def mean_state(self, state): 
         new_mean = self.mean
-        if self.mean == "Q_MEAN":
+        if self.mean == "Q_MEAN" and len(self.x_values) == 0:
             new_mean = Q(state, self.action, self.Q_dict)
         if self.x_values != []:
             new_state = np.array(list(state)).reshape(1, -1)
@@ -154,28 +178,44 @@ GP_actions = {}
 for action in actions:
     GP_actions[action] = GP(Rmax/(1 - discount), rbf_kernel, action)
 
-for t in range(timesteps):
-    noise = np.random.normal(0, 0.01)
-    final_a, actual_a = argmax_action(Q_dict, s_t, noise)
-    s_t = tuple(np.add(s_t, final_a).tolist())
-    s_t = tuple([round(i, 2) for i in s_t])
-    r_t = get_reward_v2(s_t)
-    q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
-    sigma_one_squared = GP_actions[actual_a].variance(s_t)
-    if sigma_one_squared > var_threshold:
-        GP_actions[actual_a].update(s_t, q_t)
-    sigma_two_squared = GP_actions[actual_a].variance(s_t)
-    a_t_mean = GP_actions[actual_a].mean_state(s_t)
-    print(t, s_t)
-    if sigma_one_squared > var_threshold and var_threshold >= sigma_two_squared and Q(s_t, actual_a, Q_dict) - a_t_mean > 2*epsilon_one:
-        print("HERE")
-        new_mean = a_t_mean + epsilon_one
-        selected_keys = []
-        for (sj, aj) in Q_dict:
-            if new_mean + lipschitz*d(sj, s_t) <= Q_dict[(sj, aj)]:
-                selected_keys.append((sj, aj))
-        for key in selected_keys:
-            del Q_dict[key]
-        Q_dict[(s_t, actual_a)] = new_mean
-        for action in actions:
-            GP_actions[action] = GP("Q_MEAN", rbf_kernel, action, Q_dict)
+episodes=300
+avg_reward=[]
+for i in range(episodes):
+    s_t=(0,0)
+
+    episode_rewards=0
+    for t in range(timesteps):
+        noise = np.random.normal(0, 0.01)
+        final_a, actual_a = argmax_action(Q_dict, s_t, noise)
+        s_t = tuple(np.add(s_t, final_a).tolist())
+        s_t = tuple([round(i, 2) for i in s_t])
+        if d(s_t, (1, 1)) <= 0.15:
+            print("EPISODE: ", i, t, s_t)
+            break
+        r_t = get_reward_v2(s_t)
+        episode_rewards+=r_t
+        q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
+        sigma_one_squared = GP_actions[actual_a].variance(s_t)
+        if sigma_one_squared > var_threshold:
+            if (s_t,actual_a) in Q_dict:
+                GP_actions[actual_a].update(s_t, q_t - Q_dict[(s_t,actual_a)])
+            else:
+                GP_actions[actual_a].update(s_t, q_t)
+        sigma_two_squared = GP_actions[actual_a].variance(s_t)
+        a_t_mean = GP_actions[actual_a].mean_state(s_t)
+        if sigma_one_squared > var_threshold and var_threshold >= sigma_two_squared and Q(s_t, actual_a, Q_dict) - a_t_mean > 2*epsilon_one:
+            new_mean = a_t_mean + epsilon_one
+            selected_keys = []
+            for (sj, aj) in Q_dict:
+                if new_mean + lipschitz*d(sj, s_t) <= Q_dict[(sj, aj)]:
+                    selected_keys.append((sj, aj))
+            for key in selected_keys:
+                del Q_dict[key]
+            if (s_t,actual_a) in Q_dict:
+                Q_dict[(s_t, actual_a)] = Q_dict[(s_t, actual_a)] + new_mean
+            else:
+                Q_dict[(s_t, actual_a)] =  new_mean
+            for action in actions:
+                GP_actions[action] = GP("Q_MEAN", rbf_kernel, action, Q_dict)
+    # avg_reward.append(episode_rewards)
+    # print(avg_reward)
