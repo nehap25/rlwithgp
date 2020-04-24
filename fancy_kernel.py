@@ -19,7 +19,7 @@ class FancyKernel(nn.Module):
     K_val=self.K_theta(x) + self.sigma_w * torch.eye(x.size()[0])
     
     part1= 0.5 * torch.matmul(torch.matmul(y.T,torch.inverse(K_val)),y)
-    part2= 0.5 * torch.log(torch.abs(K_val))
+    part2= 0.5 * torch.logdet(K_val)
     return part1 + part2
   def forward(self,data):
     '''
