@@ -27,25 +27,28 @@ class RBF(nn.Module):
             distances.
     """
 
-    def __init__(self, in_features, out_features, basis_func):
+    def __init__(self, basis_func,gamma):
         super(RBF, self).__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        self.centres = nn.Parameter(torch.Tensor(out_features, in_features))
-        self.sigmas = nn.Parameter(torch.Tensor(out_features))
+        #self.in_features = in_features
+        #self.out_features = out_features
+        #self.centres = nn.Parameter(torch.Tensor(out_features, in_features))
+        #self.sigmas = nn.Parameter(torch.Tensor(out_features))
         self.basis_func = basis_func
+        self.gamma=torch.Tensor(gamma)
         self.reset_parameters()
 
     def reset_parameters(self):
         nn.init.normal_(self.centres, 0, 1)
         nn.init.constant_(self.sigmas, 1)
 
-    def forward(self, input):
-        size = (input.size(0), self.out_features, self.in_features)
-        x = input.unsqueeze(1).expand(size)
-        c = self.centres.unsqueeze(0).expand(size)
-        distances = (x - c).pow(2).sum(-1).pow(0.5) * self.sigmas.unsqueeze(0)
-        return self.basis_func(distances)
+    def forward(self, input1,input2):
+        input1=nn.Parameter(input1)
+        input2=nn.Parameter(input2)
+        size = (input1.size(0), input1.size()[0], input2.size()[0])
+        x = input1.unsqueeze(1).expand(size)
+        c = input2.unsqueeze(0).expand(size)
+        distances = (x - c).pow(2)*self.gamma
+        return torch.exp(distances)
 
 
 
