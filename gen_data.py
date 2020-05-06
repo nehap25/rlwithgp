@@ -61,8 +61,8 @@ def setup(use_gui):
     region_wlh = (DIM, DIM, 0)
     region = rejection_sample_region(table_aabb, region_wlh, [p.getAABB(push_obj.pid)])
 
-    goal_pos = sample_aabb(np.array(region.aabb))
-    push_vec = np.subtract(goal_pos, push_obj.pose.pos)
+    #goal_pos = sample_aabb(np.array(region.aabb))
+    push_vec = np.subtract((0.68,0.3,0.67), push_obj.pose.pos)
     yaw = get_yaw(push_vec)
     goal_ori = eul_to_quat((0, 0, yaw))
     goal_pose=Pose(((0.68,0.3,0.67),goal_ori))
