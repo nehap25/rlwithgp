@@ -154,10 +154,10 @@ def argmax_action(Q_dict, s_t, noise):
             new_a = (action[0], action[1] + noise)
         else:
             new_a = (action[0] + noise, action[1])
-        new_s = np.add(s_t, new_a).tolist()
-        new_s = tuple([round(x, 3) for x in new_s])
-        if new_s[0] < 0 or new_s[0] > 1 or new_s[1] < 0 or new_s[1] > 1:
-            continue
+        #new_s = np.add(s_t, new_a).tolist()
+        #new_s = tuple([round(x, 3) for x in new_s])
+        #if new_s[0] < 0 or new_s[0] > 1 or new_s[1] < 0 or new_s[1] > 1:
+        #    continue
         if Q(s_t, action, Q_dict) > currentMax:
             currentMax = Q(s_t, action, Q_dict)
             final_a = new_a
