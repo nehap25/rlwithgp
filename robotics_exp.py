@@ -171,7 +171,8 @@ def get_reward_v1(s_t):
     return 1,
 
 def get_reward_v2(s_t):
-    return 2 - ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5
+    return np.sum(np.square(s_t[:3]-np.array([0.68,0.3,0.67])))
+
 
 
 Q_dict = {}
@@ -189,9 +190,9 @@ for i in range(episodes):
         final_a, actual_a = argmax_action(Q_dict, s_t, noise)
         s_t = tuple(list(objects[0].pose.pos)+list(get_pose(robot).pos))
 
-        if d(s_t, (1, 1)) <= 0.15:
-            print("EPISODE: ", i, t, s_t)
-            break
+        #if d(s_t, (1, 1)) <= 0.15:
+        #    print("EPISODE: ", i, t, s_t)
+        #    break
         r_t = get_reward_v2(s_t)
         episode_rewards+=r_t
         q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
