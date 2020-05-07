@@ -4,6 +4,7 @@ import numpy as np
 from numpy import float32
 from numpy import array
 from numpy.linalg import inv
+import matplotlib.pyplot as plt
 
 import time
 import math
@@ -28,7 +29,7 @@ lipschitz = 9
 s_t = (0, 0)
 actions = [(0.1, 0), (-0.1, 0), (0, 0.1), (0, -0.1)]
 noise_var = 0.1
-timesteps = 200
+timesteps = 2500
 states = [(i/10, j/10) for i in range(0, 10) for j in range(0, 10)]
 rbf_theta = 0.05
 
@@ -62,26 +63,6 @@ logval = log(6*len(actions)*Ns*(1 + k)/delta)
 m = (36*len(actions)*Ns*(Rmax**2)*logval)/(((1 - discount)**4)*(epsilon**2))
 eta = m*len(actions)*Ns*(3*Rmax/(((1 - discount)**2)*epsilon) + 1)
 steps = Rmax*eta*log(1/delta)*log(1/(epsilon*(1 - discount)))/(epsilon*((1 - discount)**2))
-
-# for d in range(0, 100):
-#     discount = d/100.0
-#     for e in range(1, int(1/(1 - discount)) + 1):
-#         for de in range(1, 100):
-#             delta = de/100.0
-#             Ns = covering_number(e*(1 - discount)/(3*lipschitz))
-#             k = len(actions)*Ns*(3*Rmax/(((1 - discount)**2)*e) + 1)
-#             log_val = log(len(actions)*Ns*(1 + k)*6/delta)
-#             m = (36*len(actions)*Ns*(Rmax**2)*log_val)/(((1 - discount)**4)*(e**2))
-#             eta = m*len(actions)*Ns*(3*Rmax/(((1 - discount)**2)*e) + 1)
-#             steps = Rmax*eta*log(1.0/delta)*log(1/(e*(1 - discount)))/(e*((1 - discount)**2))            
-#             var_threshold_num = 2*noise_var*(e**2)*((1 - discount)**4)
-#             var_threshold_denom = 9*(Rmax**2)
-#             var_threshold_denom *= log_val
-#             var_threshold = var_threshold_num/var_threshold_denom
-#             print(discount, e, delta, steps, var_threshold)            
-            # if steps < 500:
-            #     print("GOT HERE")
-            #     print(discount, e, delta, steps, var_threshold)
 
 class GP:
 
@@ -179,10 +160,11 @@ for action in actions:
     GP_actions[action] = GP(Rmax/(1 - discount), rbf_kernel, action)
 
 episodes=300
-avg_reward=[]
+times = []
+num_steps = []
 for i in range(episodes):
     s_t=(0,0)
-
+    start = time.time()
     episode_rewards=0
     for t in range(timesteps):
         noise = np.random.normal(0, 0.01)
@@ -190,6 +172,9 @@ for i in range(episodes):
         s_t = tuple(np.add(s_t, final_a).tolist())
         s_t = tuple([round(i, 2) for i in s_t])
         if d(s_t, (1, 1)) <= 0.15:
+            num_steps.append(t)
+            end = time.time()
+            times.append((end - start)/t)
             print("EPISODE: ", i, t, s_t)
             break
         r_t = get_reward_v2(s_t)
@@ -217,5 +202,22 @@ for i in range(episodes):
                 Q_dict[(s_t, actual_a)] =  new_mean
             for action in actions:
                 GP_actions[action] = GP("Q_MEAN", rbf_kernel, action, Q_dict)
-    # avg_reward.append(episode_rewards)
     # print(avg_reward)
+
+
+plt.plot(range(episodes), times, color="b", label="Average Time per Timestep")
+plt.xlabel("Episode")
+plt.ylabel("Time (Seconds)")
+plt.legend()
+plt.savefig("times.png")
+
+plt.plot(range(episodes), num_steps, color="g", label="Number of Steps to Reach Goal")
+plt.xlabel("Episode")
+plt.ylabel("Number of Steps")
+plt.legend()
+plt.savefig("steps.png")
+
+
+
+
+

@@ -14,20 +14,17 @@ import numpy.linalg as LA
 
 BUFFER_SIZE = int(1e4)  # replay buffer size
 BATCH_SIZE = 128        # minibatch size
-GAMMA = 0.01           # discount factor
-TAU = 1e-3              # for soft update of target parameters
-LR_ACTOR = 1e-4         # learning rate of the actor 
-LR_CRITIC = 1e-3        # learning rate of the critic
-WEIGHT_DECAY = 0        # L2 weight decay
+GAMMA = 0.01            # discount factor
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 rbf_theta = 0.05
 noise_var = SINGLE_STEP_VARIANCE
 ####CHANGE BELOW IF YOU CHANGE REWARD FUNCTION####
-Rmax = 704723.2174653504
+Rmax = 1.0
 Vmax = Rmax*60
 discount = GAMMA
+lipschitz = 9
 
 class GP:
 
@@ -70,6 +67,7 @@ class GP:
             state_variance = self.kernel(new_state, new_state, gamma=1/(2*(rbf_theta**2)))[0][0]
         return state_variance
 
+
 class Agent():
     """Interacts with and learns from the environment."""
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
@@ -97,18 +95,17 @@ class Agent():
 
     def act(self, state):
         noise_sample = self.noise.sample().item()
-        final_a = None
-        actual_a = None
+        a = None
         currentMax = float('-inf')
         for action in self.actions:
             new_a = action + noise_sample
             new_a = np.clip(new_a, 0, 1)
-            new_a = round(new_a, 3)
+            new_a = (new_a + 1.0)/2.0
+            new_a = round(new_a, 2)
             if self.Q(state, action) > currentMax:
                 currentMax = self.Q(state, action)
-                final_a = new_a
-                actual_a = action
-        return final_a, actual_a
+                a = new_a
+        return a
 
 
     def reset(self):
@@ -120,13 +117,20 @@ class Agent():
         for (si, ai) in self.Q_dict:
             if ai == a:
                 mu = self.Q_dict[(si, ai)]
-                total = mu + lipschitz*d(s, si)
+                total = mu + lipschitz*self.d(s, si)
                 currentMin = min(currentMin, total)
         return min(currentMin, Vmax)
 
     # Calculates distances between two states (based on L2 Metric)
-    def d(s, si):
-        return LA.norm(s - si)
+    def d(self, s, si):
+        distance = 0
+        for i in range(len(s)):
+            distance += abs(s[i] - si[i])
+        return distance
+
+    def resetGP(self, mean, kernel, action):
+        self.GP_actions[action] = GP("Q_MEAN", rbf_kernel, action, self.Q_dict)
+
 
 class OUNoise:
     """Ornstein-Uhlenbeck process."""
