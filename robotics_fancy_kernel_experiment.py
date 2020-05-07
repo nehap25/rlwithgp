@@ -12,14 +12,14 @@ from sklearn.metrics.pairwise import rbf_kernel
 import pickle
 ####CODE FOR ROBOTICS ENVIRONMENT--UNNECESSARY NOW#####
 #######################################################
-# import pybullet as p
-# import pybullet_data
-# from simple_world.constants import DIM, ORI, FRICTION, GRIPPER_ORI, GRIPPER_X, GRIPPER_Y, GRIPPER_Z, MASS, MAX_FRICTION, MAX_MASS, MIN_FRICTION, MIN_MASS, STEPS, WLH
-# from simple_world.utils import Conf, Pose, Robot, close_enough, create_object, create_stack, eul_to_quat, get_full_aabb, get_pose, get_yaw, rejection_sample_aabb, rejection_sample_region, sample_aabb, set_conf, set_pose, step_simulation
-# from simple_world.primitives import get_push_conf, move, push
-# from gen_data import *
-# full_pose, robot, objects,use_gui,goal_pose,mass_bool=setup(True)
-# for action in actions:
+import pybullet as p
+import pybullet_data
+from simple_world.constants import DIM, ORI, FRICTION, GRIPPER_ORI, GRIPPER_X, GRIPPER_Y, GRIPPER_Z, MASS, MAX_FRICTION, MAX_MASS, MIN_FRICTION, MIN_MASS, STEPS, WLH
+from simple_world.utils import Conf, Pose, Robot, close_enough, create_object, create_stack, eul_to_quat, get_full_aabb, get_pose, get_yaw, rejection_sample_aabb, rejection_sample_region, sample_aabb, set_conf, set_pose, step_simulation
+from simple_world.primitives import get_push_conf, move, push
+from gen_data import *
+full_pose, robot, objects,use_gui,goal_pose,mass_bool=setup(True)
+#for action in actions:
 #  robot,objects,use_gui,reward=step(action[0],action[1],robot,objects,goal_pose,use_gui)
 ########################################################
 
@@ -155,10 +155,10 @@ def argmax_action(Q_dict, s_t, noise):
             new_a = (action[0], action[1] + noise)
         else:
             new_a = (action[0] + noise, action[1])
-        new_s = np.add(s_t, new_a).tolist()
-        new_s = tuple([round(x, 3) for x in new_s])
-        if new_s[0] < 0 or new_s[0] > 1 or new_s[1] < 0 or new_s[1] > 1:
-            continue
+        #new_s = np.add(s_t, new_a).tolist()
+        #new_s = tuple([round(x, 3) for x in new_s])
+        #if new_s[0] < 0 or new_s[0] > 1 or new_s[1] < 0 or new_s[1] > 1:
+        #    continue
         if Q(s_t, action, Q_dict) > currentMax:
             currentMax = Q(s_t, action, Q_dict)
             final_a = new_a
@@ -172,8 +172,7 @@ def get_reward_v1(s_t):
     return 1,
 
 def get_reward_v2(s_t):
-    return 2 - ((1-s_t[0])**2 + (1-s_t[1])**2)**0.5
-
+    return np.sum(np.square(s_t[:3]-np.array([0.68,0.3,0.67])))
 
 Q_dict = {}
 GP_actions = {}
@@ -183,17 +182,16 @@ for action in actions:
 episodes=300
 avg_reward=[]
 for i in range(episodes):
-    s_t=(0,0)
-    
+    full_pose, robot, objects,use_gui,goal_pose,mass_bool=setup(False)
     episode_rewards=0
     for t in range(timesteps):
         noise = np.random.normal(0, 0.01)
         final_a, actual_a = argmax_action(Q_dict, s_t, noise)
-        s_t = tuple(np.add(s_t, final_a).tolist())
-        s_t = tuple([round(i, 2) for i in s_t])
-        if d(s_t, (1, 1)) <= 0.15:
-            print("EPISODE: ", i, t, s_t)
-            break
+        robot,objects,use_gui,reward = step(final_a[0],final_a[1],robot,objects,goal_pose,use_gui)
+        s_t = tuple(list(objects[0].pose.pos)+list(get_pose(robot).pos))
+        #if d(s_t, (1, 1)) <= 0.15:
+        #    print("EPISODE: ", i, t, s_t)
+        #    break
         r_t = get_reward_v2(s_t)
         episode_rewards+=r_t
         q_t = r_t + discount*max(Q(s_t, a, Q_dict) for a in actions)
