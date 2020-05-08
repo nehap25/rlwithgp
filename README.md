@@ -13,6 +13,7 @@ This is our repository for implementing Algorithm 1 from http://proceedings.mlr.
 **syntheticChrissAlmgren.py** --> Creates a simple simulation trading environment, obtained from https://github.com/udacity/deep-reinforcement-learning/tree/master/finance
 
 **robotics_exp.py** --> implements robotics experiment described in paper
+
 **robotics_fancy_kernel_experiment.py** --> implements robotics experiment described in paper with fancy kernel
 
 **gen_data.py** --> creates robotics environment for robotics_exp.py
