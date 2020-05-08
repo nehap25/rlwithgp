@@ -14,6 +14,7 @@ This is our repository for implementing Algorithm 1 from http://proceedings.mlr.
 
 **robotics_exp.py** --> implements robotics experiment described in paper
 **robotics_fancy_kernel_experiment.py** --> implements robotics experiment described in paper with fancy kernel
+
 **gen_data.py** --> creates robotics environment for robotics_exp.py
 
 
