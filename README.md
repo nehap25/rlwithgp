@@ -1,6 +1,6 @@
 # rlwithgp
 
-This is our repository for implementing Algorithm 1 from http://proceedings.mlr.press/v32/grande14.pdf for Efficient Reinforcement Learning with Gaussian Processes, along with all of our other experiments. 
+This is our repository for implementing Algorithm 1 from http://proceedings.mlr.press/v32/grande14.pdf for Efficient Reinforcement Learning with Gaussian Processes, along with all of our other experiments. Our paper can be found at https://github.com/nehap25/rlwithgp/blob/master/6_435_Final_Project.pdf.
 
 **experiment.py** --> Implements Algorithm 1 and tests it on Experiment 1 from the paper, also contains our Gaussian Process class. 
 
